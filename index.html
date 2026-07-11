@@ -3,44 +3,39 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>台风·巴威 BAVI 2026 · 数字模拟</title>
+<title>台风·巴威 BAVI 2026 · 3D 数字模拟</title>
 <style>
   :root{
-    --accent: #34e0c0;
-    --accent-soft: rgba(52,224,192,0.15);
+    --accent:#34e0c0;
+    --accent-soft:rgba(52,224,192,0.15);
     --bg0:#04070f;
-    --bg1:#0a1524;
     --ink:#e9f2ff;
     --ink-dim:#8ea6c4;
-    --panel: rgba(10,20,36,0.55);
-    --panel-brd: rgba(120,170,220,0.16);
+    --panel:rgba(10,20,36,0.55);
+    --panel-brd:rgba(120,170,220,0.16);
     --mono:"SFMono-Regular",ui-monospace,"JetBrains Mono","Roboto Mono",Menlo,Consolas,monospace;
     --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;width:100%;overflow:hidden;background:var(--bg0);color:var(--ink);font-family:var(--sans);
     -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;}
-  #stage{position:fixed;inset:0;}
-  canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+  #sky{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab;}
+  #sky:active{cursor:grabbing;}
 
-  /* ---------- HUD ---------- */
   .hud{position:absolute;inset:0;pointer-events:none;z-index:10;}
   .hud > *{pointer-events:auto;}
 
-  /* Header */
   .header{position:absolute;top:0;left:0;right:0;padding:18px 22px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
-    background:linear-gradient(180deg,rgba(3,7,15,0.7),rgba(3,7,15,0));}
+    background:linear-gradient(180deg,rgba(3,7,15,0.72),rgba(3,7,15,0));}
   .title-wrap{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;}
   .stormtag{font-family:var(--mono);font-size:11px;letter-spacing:2px;color:var(--accent);
-    border:1px solid var(--accent);border-radius:999px;padding:3px 10px;transition:.6s;white-space:nowrap;
-    box-shadow:0 0 18px -6px var(--accent);}
+    border:1px solid var(--accent);border-radius:999px;padding:3px 10px;transition:.6s;white-space:nowrap;box-shadow:0 0 18px -6px var(--accent);}
   h1{font-size:23px;font-weight:800;letter-spacing:1px;line-height:1;}
   h1 .en{font-family:var(--mono);font-weight:500;color:var(--ink-dim);font-size:14px;letter-spacing:3px;margin-left:8px;}
   .subtitle{font-size:11.5px;color:var(--ink-dim);margin-top:6px;letter-spacing:.3px;font-family:var(--mono);}
   .legend-top{text-align:right;font-family:var(--mono);font-size:10.5px;color:var(--ink-dim);line-height:1.7;}
   .legend-top b{color:var(--ink);font-weight:600;}
 
-  /* Left status stack */
   .panel{background:var(--panel);border:1px solid var(--panel-brd);border-radius:14px;
     backdrop-filter:blur(9px) saturate(1.2);-webkit-backdrop-filter:blur(9px) saturate(1.2);}
   .stack-left{position:absolute;left:20px;top:96px;width:214px;display:flex;flex-direction:column;gap:12px;}
@@ -49,7 +44,6 @@
   .cat-phase{font-family:var(--mono);font-size:10.5px;letter-spacing:2px;color:var(--ink-dim);text-transform:uppercase;}
   .cat-name{font-size:22px;font-weight:800;margin-top:4px;color:var(--accent);transition:.5s;letter-spacing:1px;}
   .cat-en{font-family:var(--mono);font-size:10.5px;color:var(--ink-dim);letter-spacing:1.5px;margin-top:2px;}
-
   .metric{padding:12px 15px;}
   .metric .k{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--ink-dim);text-transform:uppercase;}
   .metric .v{font-family:var(--mono);font-weight:700;letter-spacing:.5px;margin-top:3px;line-height:1;}
@@ -57,7 +51,6 @@
   .metric .v .unit{font-size:12px;color:var(--ink-dim);margin-left:4px;font-weight:500;}
   .metric .sub{font-size:10.5px;color:var(--ink-dim);margin-top:5px;font-family:var(--mono);}
 
-  /* Right info */
   .stack-right{position:absolute;right:20px;top:96px;width:210px;display:flex;flex-direction:column;gap:12px;}
   .kv{padding:13px 15px;display:flex;flex-direction:column;gap:9px;}
   .kv .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
@@ -67,7 +60,6 @@
   .note-card .k{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--accent);text-transform:uppercase;transition:.5s;}
   .note-card .txt{font-size:12.5px;line-height:1.55;margin-top:7px;color:var(--ink);}
 
-  /* Bottom console */
   .console{position:absolute;left:50%;transform:translateX(-50%);bottom:16px;width:min(920px,calc(100% - 40px));
     padding:14px 18px 15px;display:flex;flex-direction:column;gap:11px;}
   .tl-head{display:flex;align-items:center;justify-content:space-between;gap:14px;}
@@ -84,7 +76,6 @@
   .spd .s{padding:7px 9px;font-family:var(--mono);font-size:11px;cursor:pointer;color:var(--ink-dim);transition:.15s;}
   .spd .s.on{background:var(--accent);color:#04121a;font-weight:700;}
 
-  /* Timeline track */
   .track-wrap{position:relative;height:46px;}
   #graph{position:absolute;inset:0;width:100%;height:100%;}
   .track{position:absolute;left:0;right:0;bottom:6px;height:4px;background:rgba(255,255,255,0.12);border-radius:3px;cursor:pointer;}
@@ -97,39 +88,47 @@
   .tick.peak .dot{background:var(--accent);box-shadow:0 0 8px var(--accent);}
   .tick.peak{color:var(--ink);}
 
-  .foot{position:absolute;left:20px;bottom:14px;font-family:var(--mono);font-size:9.5px;color:#3f5570;line-height:1.6;max-width:230px;pointer-events:none;}
-  .toggles{position:absolute;right:20px;bottom:112px;display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
+  /* 3D 视角控制 */
+  .viewbox{position:absolute;right:20px;bottom:112px;display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
   .tg{font-family:var(--mono);font-size:10.5px;color:var(--ink-dim);background:var(--panel);border:1px solid var(--panel-brd);
     border-radius:8px;padding:6px 10px;cursor:pointer;transition:.2s;letter-spacing:.5px;backdrop-filter:blur(8px);}
   .tg.on{color:var(--accent);border-color:var(--accent);box-shadow:0 0 14px -6px var(--accent);}
+  .zoom{display:flex;gap:6px;}
+  .zoom .zb{width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--ink);
+    background:var(--panel);border:1px solid var(--panel-brd);border-radius:8px;cursor:pointer;backdrop-filter:blur(8px);transition:.2s;}
+  .zoom .zb:hover{border-color:var(--accent);color:var(--accent);}
 
-  /* Intro */
+  .orbit-hint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:var(--mono);font-size:12px;
+    color:rgba(233,242,255,0.55);letter-spacing:2px;text-align:center;pointer-events:none;transition:opacity 1s;line-height:1.9;}
+  .orbit-hint .ic{font-size:26px;display:block;margin-bottom:8px;opacity:.8;}
+  .compass{position:absolute;left:24px;bottom:120px;width:74px;height:74px;pointer-events:none;}
+
+  .foot{position:absolute;left:20px;bottom:14px;font-family:var(--mono);font-size:9.5px;color:#3f5570;line-height:1.6;max-width:220px;pointer-events:none;}
+
   #intro{position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;flex-direction:column;
     background:radial-gradient(circle at 50% 45%,rgba(10,22,40,.4),#04070f 70%);text-align:center;padding:24px;transition:opacity .8s;}
   #intro h2{font-size:15px;font-weight:600;letter-spacing:3px;color:var(--ink-dim);font-family:var(--mono);}
   #intro .big{font-size:40px;font-weight:800;letter-spacing:2px;margin:10px 0 4px;}
   #intro .big .en{color:var(--accent);}
-  #intro p{color:var(--ink-dim);font-size:12.5px;max-width:440px;line-height:1.7;margin-top:14px;font-family:var(--mono);}
+  #intro p{color:var(--ink-dim);font-size:12.5px;max-width:460px;line-height:1.7;margin-top:14px;font-family:var(--mono);}
   #enter{margin-top:26px;font-family:var(--mono);letter-spacing:2px;font-size:13px;color:#04121a;background:var(--accent);
     border:none;border-radius:10px;padding:12px 30px;cursor:pointer;font-weight:700;box-shadow:0 0 30px -6px var(--accent);}
   .load-dots::after{content:"";animation:dots 1.4s steps(4,end) infinite;}
   @keyframes dots{0%{content:""}25%{content:"·"}50%{content:"··"}75%{content:"···"}}
 
-  @media (max-width:820px){
+  @media (max-width:860px){
     .stack-left,.stack-right{position:static;width:auto;}
     .mobile-hide{display:none!important;}
     .header{flex-direction:column;}
     h1{font-size:19px;}
     .console{width:calc(100% - 20px);bottom:10px;padding:11px 12px;}
-    .foot{display:none;}
-    .toggles{bottom:150px;right:10px;}
+    .foot,.compass{display:none;}
+    .viewbox{bottom:150px;right:10px;}
   }
 </style>
 </head>
 <body>
-<div id="stage">
-  <canvas id="sky"></canvas>
-</div>
+<canvas id="sky"></canvas>
 
 <div class="hud">
   <div class="header">
@@ -139,13 +138,13 @@
           <h1>台风 · 巴威<span class="en">TYPHOON BAVI</span></h1>
           <span class="stormtag" id="stormtag">2026 · 第 09 号</span>
         </div>
-        <div class="subtitle">西北太平洋 · 2026 年暑期最强台风 · 程序化数字模拟（俯视云系视角）</div>
+        <div class="subtitle">西北太平洋 · 2026 年暑期最强台风 · 可自由旋转的三维数字模拟</div>
       </div>
     </div>
     <div class="legend-top mobile-hide">
-      <div>命名 · <b>越南</b> 提供，意为河内「巴位山」</div>
+      <div>操作 · <b>拖动</b> 旋转 · <b>滚轮/双指</b> 缩放</div>
       <div>峰值 · <b>915 hPa</b> / JTWC <b>285 km·h⁻¹</b>（五级）</div>
-      <div>环流直径 · 最大约 <b>1300 km</b> 巨型台风</div>
+      <div>结构 · 眼墙塔 · 台风眼 · 砧状云盖</div>
     </div>
   </div>
 
@@ -180,10 +179,20 @@
     </div>
   </div>
 
-  <div class="toggles mobile-hide">
-    <div class="tg on" id="tgIR">红外增强 IR</div>
-    <div class="tg on" id="tgWind">风场矢量 WIND</div>
-    <div class="tg on" id="tgGrid">经纬网格 GRID</div>
+  <div class="viewbox">
+    <div class="tg on" id="tgAuto">自动旋转 AUTO</div>
+    <div class="tg on" id="tgGrid">海面网格 SEA</div>
+    <div class="tg" id="tgReset">视角复位 RESET</div>
+    <div class="zoom">
+      <div class="zb" id="zOut">−</div>
+      <div class="zb" id="zIn">+</div>
+    </div>
+  </div>
+
+  <canvas class="compass mobile-hide" id="compass"></canvas>
+
+  <div class="orbit-hint" id="hint">
+    <span class="ic">✥</span>拖动旋转 · 滚轮缩放<br><span style="font-size:10px;opacity:.7">DRAG TO ORBIT · SCROLL TO ZOOM</span>
   </div>
 
   <div class="panel console">
@@ -212,24 +221,25 @@
 
   <div class="foot mobile-hide">
     数据来源：中国气象局 / JMA / JTWC 公开路径报文<br>
-    可视化为程序化艺术化重建，非业务预报产品。
+    程序化艺术化三维重建，非业务预报产品。
   </div>
 </div>
 
 <div id="intro">
-  <h2>DIGITAL TYPHOON SIMULATION</h2>
+  <h2>3D DIGITAL TYPHOON SIMULATION</h2>
   <div class="big">台风 <span class="en">巴威</span> · BAVI</div>
-  <p>一次对 2026 年第 9 号超强台风的程序化重建。<br>
-     拖动或播放时间轴，云系的螺旋、台风眼与风场将随其真实强度演变而实时改变。<br>
-     <span class="load-dots">正在生成初始涡旋</span></p>
+  <p>一次对 2026 年第 9 号超强台风的三维程序化重建。<br>
+     用鼠标或手指 <b>自由旋转</b>，从任意角度观察它的眼墙塔、台风眼与砧状云盖；<br>
+     播放或拖动时间轴，立体云系将随其真实强度演变而改变。<br>
+     <span class="load-dots">正在生成三维涡旋</span></p>
   <button id="enter" style="display:none">进入模拟 ▶</button>
 </div>
 
 <script>
 "use strict";
 /* =====================================================================
-   台风·巴威 BAVI 2026 — 程序化数字模拟
-   Canvas 2D procedural typhoon. No external libraries.
+   台风·巴威 BAVI 2026 — 三维程序化数字模拟
+   自研 Canvas 2D 三维粒子引擎（透视投影 + 深度排序），零依赖。
    ===================================================================== */
 
 /* ---------- 真实数据关键帧 (CMA/JMA/JTWC 公开报文，位置为近似) ---------- */
@@ -246,7 +256,6 @@ const KF = [
   {d:"07/11", t:"08:00", wind:48, pres:950, lat:24.5, lon:122.5, move:"北偏西 20 km/h",   dia:1200, phase:"今日 · 擦过台湾",   note:"擦过台湾北部沿海（14–16 级），趋向福建北部到浙江沿海。"},
 ];
 
-/* ---------- 强度分级 (CMA 底层风速 m/s) ---------- */
 const CATS = [
   {min:51.0, zh:"超强台风", en:"SUPER TYPHOON",       col:"#c04dff"},
   {min:41.5, zh:"强台风",   en:"SEVERE TYPHOON",      col:"#ff4d5e"},
@@ -256,349 +265,342 @@ const CATS = [
   {min:0,    zh:"热带低压", en:"TROPICAL DEPRESSION", col:"#7fb0e0"},
 ];
 function catFor(w){ for(const c of CATS){ if(w>=c.min) return c; } return CATS[CATS.length-1]; }
-function beaufort(ms){ // 蒲福风级 (m/s → 级)
+function beaufort(ms){
   const t=[[17.2,8],[20.8,9],[24.5,10],[28.5,11],[32.7,12],[37.0,13],[41.5,14],[46.2,15],[51.0,16],[56.1,17],[61.3,18]];
-  let g=7; for(const [v,gr] of t){ if(ms>=v) g=gr; }
-  return g>=18 ? "17 级+" : g+" 级";
+  let g=7; for(const [v,gr] of t){ if(ms>=v) g=gr; } return g>=18 ? "17 级+" : g+" 级";
 }
-
-/* ---------- 工具 ---------- */
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const lerp=(a,b,t)=>a+(b-a)*t;
 const smooth=t=>t<=0?0:t>=1?1:t*t*(3-2*t);
 function hexRGBA(hex,a){const n=parseInt(hex.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;}
 
-/* ---------- Canvas 初始化 ---------- */
+/* ---------- Canvas ---------- */
 const cv=document.getElementById("sky"), ctx=cv.getContext("2d",{alpha:false});
-let W=0,H=0,DPR=1,CX=0,CY=0,BASE=0;
+let W=0,H=0,DPR=1,CX=0,CY=0,MIN=0,FOCAL=0;
 function resize(){
   DPR=Math.min(window.devicePixelRatio||1,2);
   W=window.innerWidth; H=window.innerHeight;
   cv.width=W*DPR; cv.height=H*DPR;
   ctx.setTransform(DPR,0,0,DPR,0,0);
-  CX=W/2; CY=H/2 - Math.min(H*0.04,40);
-  BASE=Math.min(W,H); // storm scale reference
+  CX=W/2; CY=H/2 - Math.min(H*0.03,34);
+  MIN=Math.min(W,H); FOCAL=MIN*0.58;
 }
 window.addEventListener("resize",resize); resize();
 
-/* ---------- 预渲染软粒子精灵 ---------- */
-function makeBlob(size,inner){
+/* ---------- 软粒子精灵 ---------- */
+function makeBlob(size,r,g,b,inner){
   const c=document.createElement("canvas"); c.width=c.height=size;
-  const g=c.getContext("2d");
-  const rg=g.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
-  rg.addColorStop(0,`rgba(255,255,255,${inner})`);
-  rg.addColorStop(0.4,`rgba(235,244,255,${inner*0.5})`);
-  rg.addColorStop(1,"rgba(210,230,255,0)");
-  g.fillStyle=rg; g.fillRect(0,0,size,size);
+  const gx=c.getContext("2d");
+  const rg=gx.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
+  rg.addColorStop(0,`rgba(${r},${g},${b},${inner})`);
+  rg.addColorStop(0.45,`rgba(${r},${g},${b},${inner*0.42})`);
+  rg.addColorStop(1,`rgba(${r},${g},${b},0)`);
+  gx.fillStyle=rg; gx.fillRect(0,0,size,size);
   return c;
 }
-const SPR_CLOUD=makeBlob(64,0.55);
-const SPR_CORE =makeBlob(64,0.95);
+const SPR_CLOUD=makeBlob(64,255,255,255,0.72);  // 主体云（白）
+const SPR_CORE =makeBlob(64,255,255,255,0.98);  // 眼墙高光
+const SPR_COOL =makeBlob(64,205,222,255,0.55);  // 砧状云盖（冷白偏蓝）
+const SPR_LOW  =makeBlob(64,150,178,214,0.5);   // 低层雨带（暗一些）
 
-/* ---------- 星野背景 ---------- */
-const STARS=[]; for(let i=0;i<160;i++){STARS.push({x:Math.random(),y:Math.random(),r:Math.random()*1.2+0.2,a:Math.random()*0.5+0.15});}
-
-/* ---------- 螺旋臂几何 ---------- */
-// 每帧根据强度参数生成臂上采样点；点用加法混合绘制成云带。
-function drawArms(state){
-  const {intensity, eyeR, stormR, armCount, tight, brightness, accent} = state;
-  ctx.save();
-  ctx.translate(CX,CY);
-  ctx.rotate(-state.angle); // 北半球逆时针
-  ctx.globalCompositeOperation="lighter";
-  const segs=54;
-  for(let a=0;a<armCount;a++){
-    const base=(a/armCount)*Math.PI*2 + state.armJitter[a];
-    for(let i=1;i<=segs;i++){
-      const f=i/segs;
-      const r=eyeR + (stormR-eyeR)*Math.pow(f,0.82);
-      const theta=base + tight*Math.log(r/eyeR + 0.02);
-      // 云带亮度包络：靠近眼墙最亮，向外衰减
-      const env=Math.pow(Math.sin(Math.min(f,1)*Math.PI),0.6);
-      const near=smooth(1-Math.abs(f-0.16)/0.22); // 眼墙附近额外增亮
-      let alpha=(0.05+0.14*env)*brightness*(0.7+0.9*intensity);
-      alpha*=(0.55+0.9*near*intensity+0.5);
-      const x=r*Math.cos(theta), y=r*Math.sin(theta);
-      const size=lerp(BASE*0.03, BASE*0.16, f)*(0.7+0.5*intensity);
-      ctx.globalAlpha=clamp(alpha,0,0.9);
-      ctx.drawImage(SPR_CLOUD, x-size/2, y-size/2, size, size);
-      // 加厚：法向偏移一小簇
-      const nx=-Math.sin(theta), ny=Math.cos(theta);
-      const off=size*0.32;
-      ctx.globalAlpha=clamp(alpha*0.7,0,0.7);
-      ctx.drawImage(SPR_CLOUD, x+nx*off-size*0.35, y+ny*off-size*0.35, size*0.7, size*0.7);
-    }
-  }
-  ctx.restore();
-}
-
-/* ---------- 眼墙 + 台风眼 ---------- */
-function drawEye(state){
-  const {intensity, eyeR, organized, accent, angle}=state;
-  ctx.save();
-  ctx.translate(CX,CY);
-
-  // 眼墙亮环（加法）
-  ctx.globalCompositeOperation="lighter";
-  const ringN=60;
-  const ringStrength=organized;
-  for(let i=0;i<ringN;i++){
-    const th=(i/ringN)*Math.PI*2 - angle*1.3;
-    const rr=eyeR*lerp(1.18,1.05,intensity)*(1+0.05*Math.sin(th*3+angle*2));
-    const x=rr*Math.cos(th), y=rr*Math.sin(th);
-    const s=BASE*0.05*(0.7+0.6*intensity);
-    ctx.globalAlpha=clamp(0.10+0.55*ringStrength*intensity,0,0.8);
-    ctx.drawImage(SPR_CORE, x-s/2,y-s/2,s,s);
-  }
-
-  // 台风眼：挖出深色澄空（正常混合覆盖）
-  ctx.globalCompositeOperation="source-over";
-  const eg=ctx.createRadialGradient(0,0,0,0,0,eyeR*1.12);
-  const clarity=organized; // 组织度越高，眼越干净越深
-  eg.addColorStop(0, `rgba(6,12,22,${0.30+0.62*clarity})`);
-  eg.addColorStop(0.55,`rgba(8,16,28,${0.20+0.55*clarity})`);
-  eg.addColorStop(0.82,`rgba(12,22,38,${0.05+0.15*clarity})`);
-  eg.addColorStop(1, "rgba(12,22,38,0)");
-  ctx.globalAlpha=1;
-  ctx.fillStyle=eg;
-  ctx.beginPath(); ctx.arc(0,0,eyeR*1.12,0,Math.PI*2); ctx.fill();
-
-  // 眼内微光 & 体育场效应高光
-  if(clarity>0.35){
-    ctx.globalCompositeOperation="lighter";
-    ctx.globalAlpha=(clarity-0.35)*0.5;
-    const hl=ctx.createRadialGradient(0,0,eyeR*0.55,0,0,eyeR*1.05);
-    hl.addColorStop(0,"rgba(0,0,0,0)");
-    hl.addColorStop(0.8,hexRGBA(accent,0.10));
-    hl.addColorStop(1,hexRGBA(accent,0.0));
-    ctx.fillStyle=hl; ctx.beginPath(); ctx.arc(0,0,eyeR*1.05,0,Math.PI*2); ctx.fill();
-  }
-  ctx.restore();
-}
-
-/* ---------- 风场矢量 ---------- */
-let showWind=true, showGrid=true, showIR=true;
-function drawWind(state){
-  if(!showWind) return;
-  const {eyeR,stormR,angle,intensity,accent}=state;
-  ctx.save(); ctx.translate(CX,CY);
-  ctx.globalCompositeOperation="lighter";
-  const rings=[1.35,1.75,2.2,2.8];
-  for(const rf of rings){
-    const r=eyeR*rf; if(r>stormR*1.05) continue;
-    const n=Math.floor(rf*10)+8;
-    for(let i=0;i<n;i++){
-      const th=(i/n)*Math.PI*2 - angle*(1.2/rf);
-      const x=r*Math.cos(th), y=r*Math.sin(th);
-      const tx=-Math.sin(th), ty=Math.cos(th); // 切向(逆时针)
-      const len=BASE*0.02*(0.5+intensity)* (1.4/rf);
-      ctx.strokeStyle=hexRGBA(accent,0.10+0.18*intensity);
-      ctx.lineWidth=1.1;
-      ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+tx*len,y+ty*len); ctx.stroke();
-      // 箭头点
-      ctx.fillStyle=hexRGBA(accent,0.25+0.3*intensity);
-      ctx.beginPath(); ctx.arc(x+tx*len,y+ty*len,1.3,0,Math.PI*2); ctx.fill();
-    }
-  }
-  ctx.restore();
-}
-
-/* ---------- 经纬网格（装饰性） ---------- */
-function drawGrid(state){
-  if(!showGrid) return;
-  ctx.save(); ctx.translate(CX,CY);
-  ctx.globalCompositeOperation="source-over";
-  ctx.strokeStyle="rgba(120,160,210,0.06)"; ctx.lineWidth=1;
-  const R=state.stormR*1.35;
-  for(let i=1;i<=4;i++){ ctx.beginPath(); ctx.arc(0,0,R*i/4,0,Math.PI*2); ctx.stroke(); }
-  for(let i=0;i<12;i++){ const th=i/12*Math.PI*2; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(R*Math.cos(th),R*Math.sin(th)); ctx.stroke(); }
-  // 距离刻度标注
-  ctx.fillStyle="rgba(120,160,210,0.28)"; ctx.font="9px monospace"; ctx.textAlign="left";
-  ctx.fillText("R="+Math.round(state.dia/2)+"km", R*0.72, -4);
-  ctx.restore();
-}
-
-/* ---------- 背景 ---------- */
-function drawBG(state){
-  // 深海/太空底
-  const g=ctx.createRadialGradient(CX,CY,0,CX,CY,BASE*0.9);
-  g.addColorStop(0, hexRGBA(state.accent,0.05));
-  g.addColorStop(0.35,"#0a1524");
-  g.addColorStop(1,"#04070f");
-  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-  // 星点
-  ctx.globalCompositeOperation="lighter";
-  for(const s of STARS){ ctx.globalAlpha=s.a*0.6; ctx.fillStyle="#cfe0ff";
-    ctx.fillRect(s.x*W, s.y*H, s.r, s.r); }
-  ctx.globalAlpha=1; ctx.globalCompositeOperation="source-over";
-}
-
-/* ---------- 外层云盾 ---------- */
-function drawShield(state){
-  ctx.save(); ctx.translate(CX,CY);
-  ctx.globalCompositeOperation="lighter";
-  const R=state.stormR*1.12;
-  const g=ctx.createRadialGradient(0,0,state.eyeR*0.5,0,0,R);
-  const b=0.06+0.10*state.intensity;
-  g.addColorStop(0,`rgba(220,235,255,0)`);
-  g.addColorStop(0.5,`rgba(210,228,255,${b})`);
-  g.addColorStop(1,`rgba(190,215,255,0)`);
-  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,R,0,Math.PI*2); ctx.fill();
-
-  if(showIR){ // 红外增强：眼墙区域的冷云顶伪彩描边
-    ctx.globalCompositeOperation="lighter";
-    const rg=ctx.createRadialGradient(0,0,state.eyeR*0.9,0,0,state.eyeR*2.4);
-    rg.addColorStop(0,hexRGBA(state.accent,0));
-    rg.addColorStop(0.35,hexRGBA(state.accent,0.16*state.intensity));
-    rg.addColorStop(1,hexRGBA(state.accent,0));
-    ctx.fillStyle=rg; ctx.beginPath(); ctx.arc(0,0,state.eyeR*2.4,0,Math.PI*2); ctx.fill();
-  }
-  ctx.restore();
-}
+/* 星野 */
+const STARS=[]; for(let i=0;i<170;i++){STARS.push({x:Math.random(),y:Math.random(),r:Math.random()*1.2+0.2,a:Math.random()*0.5+0.15});}
 
 /* =====================================================================
-   模拟状态 & 时间轴
+   三维粒子模型
+   坐标：y 向上；水平面 = xz。风暴半径基准 SR=1（归一化，投影时用 FOCAL 缩放）。
+   每个粒子存归一化参数，随强度/尺度实时映射到世界坐标。
+   分组 g：0 低层雨带 · 1 眼墙塔 · 2 砧状云盖 · 3 外围卷云
    ===================================================================== */
-const state={angle:0,intensity:0,eyeR:40,stormR:200,armCount:2,tight:2.2,brightness:1,
-  organized:0,accent:"#34e0c0",dia:400,armJitter:[]};
-for(let i=0;i<8;i++) state.armJitter[i]=Math.random()*0.6-0.3;
+const ARMS=5;                                   // 螺旋臂数
+let N=0;
+let P_g,P_rN,P_th,P_yN,P_sz,P_br,P_ph;          // 粒子属性
+let SX,SY,SS,SD,SA,SSPR;                         // 每帧投影结果
+let ORDER;
+// 高斯随机（Box–Muller 近似，用于把雨带收拢在臂中线附近）
+function gauss(){ return (Math.random()+Math.random()+Math.random()-1.5)/1.5; }
+function initParticles(){
+  const perf = MIN<720 ? 0.6 : 1.0;
+  const counts={band:Math.round(1700*perf), wall:Math.round(1000*perf), anvil:Math.round(620*perf), outer:Math.round(320*perf)};
+  N=counts.band+counts.wall+counts.anvil+counts.outer;
+  P_g=new Uint8Array(N); P_rN=new Float32Array(N); P_th=new Float32Array(N);
+  P_yN=new Float32Array(N); P_sz=new Float32Array(N); P_br=new Float32Array(N); P_ph=new Float32Array(N);
+  SX=new Float32Array(N); SY=new Float32Array(N); SS=new Float32Array(N); SD=new Float32Array(N); SA=new Float32Array(N); SSPR=new Uint8Array(N);
+  ORDER=new Array(N); for(let i=0;i<N;i++) ORDER[i]=i;
+  let i=0; const R=()=>Math.random();
+  // 低层螺旋雨带：沿 ARMS 条臂的中线收拢，臂间留暗缝
+  for(let k=0;k<counts.band;k++,i++){
+    const arm=k%ARMS;
+    const t=Math.pow(R(),0.7);                   // 沿臂参数（偏外）
+    P_g[i]=0; P_rN[i]=t;
+    P_th[i]=(arm/ARMS)*Math.PI*2 + gauss()*0.16; // 臂中线 + 窄高斯展宽
+    P_yN[i]=R();                                 // 垂直微厚度
+    P_sz[i]=0.55+R()*0.8; P_br[i]=0.5+R()*0.5; P_ph[i]=R()*6.28;
+  }
+  // 眼墙塔（围绕眼的立柱，向上略外扩 = 体育场效应）
+  for(let k=0;k<counts.wall;k++,i++){
+    P_g[i]=1; P_rN[i]=gauss()*0.5;               // 环向厚度抖动
+    P_th[i]=R()*Math.PI*2;
+    P_yN[i]=Math.pow(R(),0.9);                   // 高度 0..1
+    P_sz[i]=0.5+R()*0.7; P_br[i]=0.75+R()*0.55; P_ph[i]=R()*6.28;
+  }
+  // 砧状云盖（高空外流卷云，稀疏、极淡、羽状）
+  for(let k=0;k<counts.anvil;k++,i++){
+    const arm=k%ARMS;
+    P_g[i]=2; P_rN[i]=Math.pow(R(),0.55);
+    P_th[i]=(arm/ARMS)*Math.PI*2 + gauss()*0.5;
+    P_yN[i]=R(); P_sz[i]=1.0+R()*1.4; P_br[i]=0.28+R()*0.35; P_ph[i]=R()*6.28;
+  }
+  // 外围卷云 / 螺旋馈线
+  for(let k=0;k<counts.outer;k++,i++){
+    P_g[i]=3; P_rN[i]=R(); P_th[i]=(k%ARMS/ARMS)*Math.PI*2 + gauss()*0.3;
+    P_yN[i]=R(); P_sz[i]=0.7+R()*1.1; P_br[i]=0.2+R()*0.3; P_ph[i]=R()*6.28;
+  }
+}
+initParticles();
 
-let pos=0;            // 关键帧浮点索引 0..KF.length-1
-let playing=false, speed=1, lastT=performance.now();
-const SEG_SECONDS=3.2; // 每段基准秒数
-let entered=false;
+/* =====================================================================
+   状态
+   ===================================================================== */
+const state={
+  spin:0, intensity:0, organized:0, accent:"#34e0c0",
+  eyeRN:0.2, towerHN:0.2, tight:1.8, brightness:0.8, anvilRN:1.0, dia:400,
+  yaw:0.6, pitch:0.62, camDist:2.7,
+};
+let pos=0, playing=false, speed=1, lastT=performance.now(), entered=false;
+const SEG_SECONDS=3.2;
+let autoRotate=true, showGrid=true, userInteracted=false, idleTimer=0;
 
-/* 依据 pos 插值当前数据 */
 function sample(){
-  const n=KF.length;
-  const p=clamp(pos,0,n-1);
+  const n=KF.length, p=clamp(pos,0,n-1);
   const i=Math.floor(p), f=p-i, j=Math.min(i+1,n-1);
   const A=KF[i], B=KF[j];
-  const wind=lerp(A.wind,B.wind,f);
-  const pres=lerp(A.pres,B.pres,f);
-  const lat=lerp(A.lat,B.lat,f), lon=lerp(A.lon,B.lon,f);
-  const dia=lerp(A.dia,B.dia,f);
-  const cur = f<0.5?A:B;
-  return {wind,pres,lat,lon,dia,cur,A,B,f,i};
+  return {
+    wind:lerp(A.wind,B.wind,f), pres:lerp(A.pres,B.pres,f),
+    lat:lerp(A.lat,B.lat,f), lon:lerp(A.lon,B.lon,f), dia:lerp(A.dia,B.dia,f),
+    cur:f<0.5?A:B
+  };
 }
-
-/* 依据数据更新可视化参数（含缓动） */
 function updateState(dt){
-  const s=sample();
-  const cat=catFor(s.wind);
-  // 强度归一 (15→72 m/s)
+  const s=sample(), cat=catFor(s.wind);
   const I=clamp((s.wind-16)/(62-16),0,1);
-  // 组织度：随强度提升并对台风级以上更快，用于台风眼清晰度
   const org=smooth(clamp((s.wind-30)/(58-30),0,1));
-  // 目标值
+  const diaF=clamp((s.dia-400)/900,0,1);
   const tgt={
-    intensity:I,
-    organized:org,
-    accent:cat.col,
-    eyeR: BASE*lerp(0.11,0.052,I) * lerp(1.0,0.82,org),
-    stormR: BASE*lerp(0.30,0.46,clamp(s.dia/1300,0,1)),
-    armCount: Math.round(lerp(2,5,I)),
-    tight: lerp(1.8,3.1,I),
-    brightness: lerp(0.75,1.25,I),
+    intensity:I, organized:org, accent:cat.col,
+    eyeRN:lerp(0.20,0.075,I),
+    towerHN:lerp(0.16,0.52,I),
+    tight:lerp(1.6,3.0,I),
+    brightness:lerp(0.72,1.2,I),
+    anvilRN:lerp(0.95,1.18,I),
     dia:s.dia,
   };
-  const k=clamp(1-Math.pow(0.001,clamp(dt,0,0.05)),0,1); // 平滑跟随（夹紧防过冲）
-  state.intensity=lerp(state.intensity,tgt.intensity,k);
-  state.organized=lerp(state.organized,tgt.organized,k);
-  state.eyeR=Math.max(4,lerp(state.eyeR,tgt.eyeR,k));
-  state.stormR=Math.max(state.eyeR*1.5,lerp(state.stormR,tgt.stormR,k));
-  state.tight=lerp(state.tight,tgt.tight,k);
-  state.brightness=lerp(state.brightness,tgt.brightness,k);
-  state.armCount=tgt.armCount;
-  state.accent=tgt.accent;
-  state.dia=tgt.dia;
-  // 旋转：强度越大越快
-  state.angle += dt*(0.12+state.intensity*0.55);
+  const k=clamp(1-Math.pow(0.0015,clamp(dt,0,0.05)),0,1);
+  for(const key of ["intensity","organized","eyeRN","towerHN","tight","brightness","anvilRN"])
+    state[key]=lerp(state[key],tgt[key],k);
+  state.accent=tgt.accent; state.dia=tgt.dia;
+  state.spin += dt*(0.10+state.intensity*0.42);
+  // 自动旋转
+  if(autoRotate && !userInteracted) state.yaw += dt*0.09;
   return {s,cat,I,org};
 }
 
 /* =====================================================================
-   HUD 更新
+   三维投影 + 渲染
+   ===================================================================== */
+function project(){
+  const cy=Math.cos(state.yaw), sy=Math.sin(state.yaw);
+  const cp=Math.cos(state.pitch), sp=Math.sin(state.pitch);
+  const D=state.camDist;
+  const eyeR=state.eyeRN, towerH=state.towerHN, tight=state.tight, spin=state.spin;
+  const anvilR=state.anvilRN, I=state.intensity, org=state.organized;
+  let count=0;
+  for(let i=0;i<N;i++){
+    const g=P_g[i]; let r,y,th,a;
+    if(g===0){                       // 低层螺旋雨带
+      const t=P_rN[i];
+      r=eyeR + t*(1.0-eyeR);
+      y=0.015 + 0.09*t + P_yN[i]*0.03;
+      th=P_th[i] + spin - tight*t*1.35;
+      a=P_br[i]*(0.28+0.30*I);
+    }else if(g===1){                 // 眼墙塔
+      const hf=P_yN[i];
+      r=eyeR*(1.0+0.26*hf) + P_rN[i]*0.012;
+      y=hf*towerH;
+      th=P_th[i] + spin*1.2;
+      a=P_br[i]*(0.30+0.34*I)*(0.7+0.7*org);
+    }else if(g===2){                 // 砧状云盖（薄而透）
+      const t=P_rN[i];
+      r=eyeR*1.15 + t*(anvilR-eyeR*1.15);
+      y=towerH*(0.86+0.12*(1-t)) + 0.015*Math.sin(P_ph[i]+spin);
+      th=P_th[i] + spin*0.5 + 0.55*t;
+      a=P_br[i]*(0.12+0.12*I)*(0.5+0.6*org);
+    }else{                           // 外围卷云 / 馈线
+      const t=P_rN[i];
+      r=1.0 + t*0.5;
+      y=0.05 + 0.06*Math.sin(P_ph[i]);
+      th=P_th[i] + spin*0.8 - tight*0.45*t;
+      a=P_br[i]*(0.14+0.14*I);
+    }
+    const x=r*Math.cos(th), z=r*Math.sin(th);
+    const x1=x*cy - z*sy, z1=x*sy + z*cy;
+    const y2=y*cp - z1*sp, z2=y*sp + z1*cp;
+    const depth=z2 + D;
+    if(depth<0.2) continue;
+    const inv=FOCAL/depth;
+    SX[count]=CX + x1*inv; SY[count]=CY - y2*inv;
+    SS[count]=P_sz[i]*inv*0.052; SD[count]=depth;
+    a*=clamp(1.3-(depth-D+0.9)*0.34,0.30,1.0);   // 空气透视
+    SA[count]=a;
+    SSPR[count]= g===1?1 : g===2?2 : g===0?3 : 0;
+    ORDER[count]=count; count++;
+  }
+  return count;
+}
+function drawParticles(){
+  const count=project();
+  const ord=ORDER; ord.length=count;
+  ord.sort((a,b)=>SD[b]-SD[a]);      // 远→近（画家算法）
+  ctx.globalCompositeOperation="lighter";
+  const sprites=[SPR_CLOUD,SPR_CORE,SPR_COOL,SPR_LOW];
+  const sizeMul=[1.9,1.6,2.8,2.0];   // 按 SSPR：cloud/core/cool/low
+  for(let k=0;k<count;k++){
+    const i=ord[k];
+    const s=SS[i]; if(s<0.35) continue;
+    let a=SA[i]; if(a<0.012) continue; if(a>0.55)a=0.55;
+    ctx.globalAlpha=a;
+    const sp=SSPR[i]; const d=s*sizeMul[sp];
+    ctx.drawImage(sprites[sp], SX[i]-d/2, SY[i]-d/2, d, d);
+  }
+  ctx.globalAlpha=1; ctx.globalCompositeOperation="source-over";
+}
+
+/* 海面极网格 + 台风眼澄空（y=0 平面） */
+function projPoint(x,y,z){
+  const cy=Math.cos(state.yaw), sy=Math.sin(state.yaw);
+  const cp=Math.cos(state.pitch), sp=Math.sin(state.pitch), D=state.camDist;
+  const x1=x*cy - z*sy, z1=x*sy + z*cy;
+  const y2=y*cp - z1*sp, z2=y*sp + z1*cp;
+  const depth=z2+D; if(depth<0.15) return null;
+  const inv=FOCAL/depth;
+  return {x:CX+x1*inv, y:CY-y2*inv, d:depth};
+}
+function drawSea(){
+  if(!showGrid) return;
+  ctx.globalCompositeOperation="source-over";
+  ctx.strokeStyle="rgba(110,150,205,0.11)"; ctx.lineWidth=1;
+  const rings=[0.35,0.6,0.85,1.1,1.35];
+  for(const rr of rings){
+    ctx.beginPath(); let first=true;
+    for(let a=0;a<=48;a++){
+      const th=a/48*Math.PI*2, pt=projPoint(rr*Math.cos(th),0,rr*Math.sin(th));
+      if(!pt){first=true;continue;}
+      if(first){ctx.moveTo(pt.x,pt.y);first=false;} else ctx.lineTo(pt.x,pt.y);
+    }
+    ctx.stroke();
+  }
+  for(let a=0;a<12;a++){
+    const th=a/12*Math.PI*2, p0=projPoint(0.3*Math.cos(th),0,0.3*Math.sin(th)), p1=projPoint(1.35*Math.cos(th),0,1.35*Math.sin(th));
+    if(p0&&p1){ ctx.beginPath(); ctx.moveTo(p0.x,p0.y); ctx.lineTo(p1.x,p1.y); ctx.stroke(); }
+  }
+  // 台风眼澄空：暗色海面圆盘 + 主题色环
+  const eyeR=state.eyeRN;
+  const pts=[];
+  for(let a=0;a<40;a++){ const th=a/40*Math.PI*2; const pt=projPoint(eyeR*0.94*Math.cos(th),0.001,eyeR*0.94*Math.sin(th)); if(pt)pts.push(pt); }
+  if(pts.length>8){
+    ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+    for(let a=1;a<pts.length;a++) ctx.lineTo(pts[a].x,pts[a].y);
+    ctx.closePath();
+    ctx.fillStyle=`rgba(4,9,17,${0.35+0.45*state.organized})`; ctx.fill();
+    ctx.strokeStyle=hexRGBA(state.accent,0.18+0.22*state.organized); ctx.lineWidth=1.4; ctx.stroke();
+  }
+}
+
+function drawBG(){
+  const g=ctx.createRadialGradient(CX,CY,0,CX,CY,MIN*0.95);
+  g.addColorStop(0,hexRGBA(state.accent,0.05));
+  g.addColorStop(0.32,"#0a1524"); g.addColorStop(1,"#04070f");
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.globalCompositeOperation="lighter";
+  for(const s of STARS){ ctx.globalAlpha=s.a*0.55; ctx.fillStyle="#cfe0ff"; ctx.fillRect(s.x*W,s.y*H,s.r,s.r); }
+  ctx.globalAlpha=1; ctx.globalCompositeOperation="source-over";
+}
+
+/* =====================================================================
+   HUD
    ===================================================================== */
 const $=id=>document.getElementById(id);
-function pad(n){return n<10?"0"+n:""+n;}
 function updateHUD(info){
-  const {s,cat}=info;
-  const wind=Math.round(s.wind), pres=Math.round(s.pres);
+  const {s,cat}=info; const wind=Math.round(s.wind), pres=Math.round(s.pres);
   $("wind").textContent=wind;
   $("windKmh").textContent="≈ "+Math.round(wind*3.6)+" km·h⁻¹ · "+beaufort(wind);
   $("pres").textContent=pres;
-  $("catName").textContent=cat.zh;
-  $("catEn").textContent=cat.en;
-  $("phase").textContent=s.cur.phase;
-  $("note").textContent=s.cur.note;
+  $("catName").textContent=cat.zh; $("catEn").textContent=cat.en;
+  $("phase").textContent=s.cur.phase; $("note").textContent=s.cur.note;
   $("rDate").textContent=s.cur.d;
   $("rPos").textContent=s.lat.toFixed(1)+"°N "+Math.round(s.lon)+"°E";
-  $("rMove").textContent=s.cur.move;
-  $("rSize").textContent="≈ "+Math.round(s.dia)+" km";
-  const dd=s.cur.d.split("/");
-  $("cDate").textContent=dd[0]+" 月 "+dd[1]+" 日 "+s.cur.t;
-  // 主题色
+  $("rMove").textContent=s.cur.move; $("rSize").textContent="≈ "+Math.round(s.dia)+" km";
+  const dd=s.cur.d.split("/"); $("cDate").textContent=dd[0]+" 月 "+dd[1]+" 日 "+s.cur.t;
   document.documentElement.style.setProperty("--accent",cat.col);
   document.documentElement.style.setProperty("--accent-soft",hexRGBA(cat.col,0.15));
-  $("catName").style.color=cat.col;
-  $("stormtag").style.color=cat.col;
-  $("stormtag").style.borderColor=cat.col;
-  // 时间轴
+  $("catName").style.color=cat.col; $("stormtag").style.color=cat.col; $("stormtag").style.borderColor=cat.col;
   const frac=clamp(pos/(KF.length-1),0,1);
-  $("fill").style.width=(frac*100)+"%";
-  $("head").style.left=(frac*100)+"%";
+  $("fill").style.width=(frac*100)+"%"; $("head").style.left=(frac*100)+"%";
 }
 
-/* ---------- 底部风-压曲线 ---------- */
-const gcv=$("graph"), gtx=gcv.getContext("2d");
-let gW=0,gH=0;
-function sizeGraph(){ const r=gcv.getBoundingClientRect(); gW=r.width; gH=r.height;
-  gcv.width=gW*DPR; gcv.height=gH*DPR; gtx.setTransform(DPR,0,0,DPR,0,0); }
+/* 风-压曲线 */
+const gcv=$("graph"), gtx=gcv.getContext("2d"); let gW=0,gH=0;
+function sizeGraph(){ const r=gcv.getBoundingClientRect(); gW=r.width; gH=r.height; gcv.width=gW*DPR; gcv.height=gH*DPR; gtx.setTransform(DPR,0,0,DPR,0,0); }
 function drawGraph(){
-  if(!gW){sizeGraph();}
-  gtx.clearRect(0,0,gW,gH);
-  const n=KF.length, padX=4, padTop=6, padBot=20;
-  const x=i=>padX+(gW-2*padX)*i/(n-1);
+  if(!gW)sizeGraph(); gtx.clearRect(0,0,gW,gH);
+  const n=KF.length, padX=4, padTop=6, padBot=20, x=i=>padX+(gW-2*padX)*i/(n-1);
   const winds=KF.map(k=>k.wind), press=KF.map(k=>k.pres);
-  const wMin=15,wMax=64, pMin=910,pMax=1000;
+  const wMin=15,wMax=64,pMin=910,pMax=1000;
   const yW=v=>padTop+(gH-padTop-padBot)*(1-(v-wMin)/(wMax-wMin));
-  const yP=v=>padTop+(gH-padTop-padBot)*(1-(pMax-v)/(pMax-pMin)); // 气压：低在下
-  // 压力线（青）
+  const yP=v=>padTop+(gH-padTop-padBot)*(1-(pMax-v)/(pMax-pMin));
   gtx.strokeStyle="rgba(80,200,235,0.55)"; gtx.lineWidth=1.4; gtx.beginPath();
-  press.forEach((v,i)=>{ const X=x(i),Y=yP(v); i?gtx.lineTo(X,Y):gtx.moveTo(X,Y); }); gtx.stroke();
-  // 风速线（琥珀）+填充
-  gtx.beginPath(); winds.forEach((v,i)=>{const X=x(i),Y=yW(v); i?gtx.lineTo(X,Y):gtx.moveTo(X,Y);});
+  press.forEach((v,i)=>{const X=x(i),Y=yP(v);i?gtx.lineTo(X,Y):gtx.moveTo(X,Y);}); gtx.stroke();
+  gtx.beginPath(); winds.forEach((v,i)=>{const X=x(i),Y=yW(v);i?gtx.lineTo(X,Y):gtx.moveTo(X,Y);});
   gtx.lineTo(x(n-1),gH-padBot); gtx.lineTo(x(0),gH-padBot); gtx.closePath();
   const fg=gtx.createLinearGradient(0,0,0,gH); fg.addColorStop(0,"rgba(255,170,60,0.22)"); fg.addColorStop(1,"rgba(255,170,60,0)");
   gtx.fillStyle=fg; gtx.fill();
   gtx.strokeStyle="rgba(255,180,70,0.9)"; gtx.lineWidth=1.6; gtx.beginPath();
-  winds.forEach((v,i)=>{const X=x(i),Y=yW(v); i?gtx.lineTo(X,Y):gtx.moveTo(X,Y);}); gtx.stroke();
-  // 关键帧点
-  winds.forEach((v,i)=>{ gtx.fillStyle="rgba(255,200,110,0.9)"; gtx.beginPath(); gtx.arc(x(i),yW(v),1.8,0,7); gtx.fill(); });
-  // 当前游标
+  winds.forEach((v,i)=>{const X=x(i),Y=yW(v);i?gtx.lineTo(X,Y):gtx.moveTo(X,Y);}); gtx.stroke();
+  winds.forEach((v,i)=>{gtx.fillStyle="rgba(255,200,110,0.9)";gtx.beginPath();gtx.arc(x(i),yW(v),1.8,0,7);gtx.fill();});
   const cx=x(clamp(pos,0,n-1));
   gtx.strokeStyle="rgba(255,255,255,0.35)"; gtx.lineWidth=1; gtx.setLineDash([2,3]);
   gtx.beginPath(); gtx.moveTo(cx,padTop-2); gtx.lineTo(cx,gH-padBot); gtx.stroke(); gtx.setLineDash([]);
-  const s=sample();
-  gtx.fillStyle="#fff"; gtx.beginPath(); gtx.arc(cx,yW(s.wind),3.2,0,7); gtx.fill();
+  const s=sample(); gtx.fillStyle="#fff"; gtx.beginPath(); gtx.arc(cx,yW(s.wind),3.2,0,7); gtx.fill();
   gtx.fillStyle=state.accent; gtx.beginPath(); gtx.arc(cx,yW(s.wind),2,0,7); gtx.fill();
-  // 图例
   gtx.font="9px monospace"; gtx.textAlign="left";
-  gtx.fillStyle="rgba(255,180,70,0.9)"; gtx.fillText("● 风速 m/s", padX+2, gH-8);
-  gtx.fillStyle="rgba(80,200,235,0.9)"; gtx.fillText("● 气压 hPa", padX+78, gH-8);
+  gtx.fillStyle="rgba(255,180,70,0.9)"; gtx.fillText("● 风速 m/s",padX+2,gH-8);
+  gtx.fillStyle="rgba(80,200,235,0.9)"; gtx.fillText("● 气压 hPa",padX+78,gH-8);
 }
-
-/* ---------- 时间轴刻度 ---------- */
 function buildTicks(){
   const el=$("ticks"); el.innerHTML="";
-  KF.forEach((k,i)=>{
-    const t=document.createElement("div");
+  KF.forEach((k,i)=>{ const t=document.createElement("div");
     t.className="tick"+(k.phase.includes("PEAK")?" peak":"");
     t.style.left=(i/(KF.length-1)*100)+"%";
-    t.innerHTML='<div class="dot"></div>'+k.d.slice(3);
-    el.appendChild(t);
-  });
+    t.innerHTML='<div class="dot"></div>'+k.d.slice(3); el.appendChild(t); });
+}
+
+/* 罗盘 */
+const ccv=$("compass"), cctx=ccv&&ccv.getContext("2d");
+function drawCompass(){
+  if(!cctx) return; const s=74; ccv.width=s*DPR; ccv.height=s*DPR; cctx.setTransform(DPR,0,0,DPR,0,0);
+  cctx.clearRect(0,0,s,s); const c=s/2, R=s/2-8;
+  cctx.strokeStyle="rgba(120,160,210,0.3)"; cctx.lineWidth=1; cctx.beginPath(); cctx.arc(c,c,R,0,7); cctx.stroke();
+  cctx.save(); cctx.translate(c,c); cctx.rotate(-state.yaw);
+  const dirs=[["N",0],["E",90],["S",180],["W",270]];
+  cctx.font="9px monospace"; cctx.textAlign="center"; cctx.textBaseline="middle";
+  for(const [ch,deg] of dirs){ const a=(deg-90)*Math.PI/180; const x=Math.cos(a)*R, y=Math.sin(a)*R;
+    cctx.fillStyle=ch==="N"?state.accent:"rgba(150,180,220,0.7)"; cctx.fillText(ch,x,y); }
+  // 指北针
+  cctx.rotate(0); cctx.fillStyle=state.accent; cctx.beginPath();
+  cctx.moveTo(0,-R+6); cctx.lineTo(4,2); cctx.lineTo(-4,2); cctx.closePath(); cctx.globalAlpha=0.85; cctx.fill(); cctx.globalAlpha=1;
+  cctx.restore();
+  cctx.fillStyle="rgba(150,180,220,0.55)"; cctx.font="8px monospace"; cctx.textAlign="center";
+  cctx.fillText("俯仰 "+Math.round(state.pitch*57)+"°",c,s-2);
 }
 
 /* =====================================================================
@@ -606,18 +608,13 @@ function buildTicks(){
    ===================================================================== */
 function frame(now){
   let dt=(now-lastT)/1000; lastT=now; if(dt>0.05)dt=0.05; if(dt<0)dt=0;
-  if(playing && entered){
-    pos+=dt*speed/SEG_SECONDS;
-    if(pos>=KF.length-1){ pos=KF.length-1; setPlaying(false); }
-  }
+  if(playing && entered){ pos+=dt*speed/SEG_SECONDS; if(pos>=KF.length-1){pos=KF.length-1; setPlaying(false);} }
+  if(userInteracted){ idleTimer+=dt; if(idleTimer>4) userInteracted=false; }
   const info=updateState(dt);
-  // 渲染
-  drawBG(state);
-  drawGrid(state);
-  drawShield(state);
-  drawArms(state);
-  drawWind(state);
-  drawEye(state);
+  drawBG();
+  drawSea();
+  drawParticles();
+  drawCompass();
   updateHUD(info);
   drawGraph();
   requestAnimationFrame(frame);
@@ -626,55 +623,62 @@ function frame(now){
 /* =====================================================================
    交互
    ===================================================================== */
-function setPlaying(p){ playing=p; const b=$("play");
-  b.textContent=p?"❚❚ 暂停":"▶ 播放";
-  if(p && pos>=KF.length-1) pos=0;
-}
+function setPlaying(p){ playing=p; $("play").textContent=p?"❚❚ 暂停":"▶ 播放"; if(p&&pos>=KF.length-1)pos=0; }
 $("play").addEventListener("click",()=>setPlaying(!playing));
 $("restart").addEventListener("click",()=>{pos=0;setPlaying(true);});
-$("spd").addEventListener("click",e=>{const s=e.target.closest(".s"); if(!s)return;
-  speed=parseFloat(s.dataset.s); [...$("spd").children].forEach(c=>c.classList.toggle("on",c===s));});
+$("spd").addEventListener("click",e=>{const s=e.target.closest(".s"); if(!s)return; speed=parseFloat(s.dataset.s);
+  [...$("spd").children].forEach(c=>c.classList.toggle("on",c===s));});
 
-// 时间轴拖动
+/* 轨道相机：拖动旋转 */
+let dragging=false, lastX=0, lastY=0;
+function markInteract(){ userInteracted=true; idleTimer=0; const h=$("hint"); if(h)h.style.opacity="0"; }
+cv.addEventListener("pointerdown",e=>{ dragging=true; lastX=e.clientX; lastY=e.clientY; markInteract(); cv.setPointerCapture&&cv.setPointerCapture(e.pointerId); });
+cv.addEventListener("pointermove",e=>{ if(!dragging)return;
+  const dx=e.clientX-lastX, dy=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY;
+  state.yaw += dx*0.006; state.pitch=clamp(state.pitch - dy*0.006, -0.05, 1.50); markInteract(); });
+window.addEventListener("pointerup",()=>{dragging=false;});
+/* 滚轮缩放 */
+cv.addEventListener("wheel",e=>{ e.preventDefault(); state.camDist=clamp(state.camDist*(1+Math.sign(e.deltaY)*0.08),1.6,5.5); markInteract(); },{passive:false});
+/* 双指缩放 */
+let pinchD=0;
+cv.addEventListener("touchstart",e=>{ if(e.touches.length===2){ pinchD=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); } },{passive:false});
+cv.addEventListener("touchmove",e=>{ if(e.touches.length===2){ e.preventDefault();
+  const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+  if(pinchD){ state.camDist=clamp(state.camDist*(pinchD/d),1.6,5.5); } pinchD=d; markInteract(); } },{passive:false});
+cv.addEventListener("touchend",()=>{pinchD=0;});
+
+$("zIn").addEventListener("click",()=>{state.camDist=clamp(state.camDist*0.85,1.6,5.5);});
+$("zOut").addEventListener("click",()=>{state.camDist=clamp(state.camDist*1.18,1.6,5.5);});
+$("tgAuto").addEventListener("click",e=>{autoRotate=!autoRotate; e.target.classList.toggle("on",autoRotate); if(autoRotate)userInteracted=false;});
+$("tgGrid").addEventListener("click",e=>{showGrid=!showGrid; e.target.classList.toggle("on",showGrid);});
+$("tgReset").addEventListener("click",()=>{ state.yaw=0.6; state.pitch=0.62; state.camDist=2.7; });
+
+/* 时间轴拖动 */
 const track=$("track");
-function seekAt(clientX){ const r=track.getBoundingClientRect();
-  pos=clamp((clientX-r.left)/r.width,0,1)*(KF.length-1); }
-let dragging=false;
-function down(e){dragging=true; setPlaying(false); seekAt((e.touches?e.touches[0]:e).clientX);}
-function moveE(e){if(dragging)seekAt((e.touches?e.touches[0]:e).clientX);}
-function up(){dragging=false;}
-track.addEventListener("mousedown",down); window.addEventListener("mousemove",moveE); window.addEventListener("mouseup",up);
-track.addEventListener("touchstart",e=>{down(e);e.preventDefault();},{passive:false});
-window.addEventListener("touchmove",e=>{if(dragging){moveE(e);e.preventDefault();}},{passive:false});
-window.addEventListener("touchend",up);
+function seekAt(clientX){ const r=track.getBoundingClientRect(); pos=clamp((clientX-r.left)/r.width,0,1)*(KF.length-1); }
+let tdrag=false;
+track.addEventListener("pointerdown",e=>{tdrag=true;setPlaying(false);seekAt(e.clientX);e.stopPropagation();});
+window.addEventListener("pointermove",e=>{if(tdrag)seekAt(e.clientX);});
+window.addEventListener("pointerup",()=>{tdrag=false;});
 
-// 图层开关
-$("tgIR").addEventListener("click",e=>{showIR=!showIR;e.target.classList.toggle("on",showIR);});
-$("tgWind").addEventListener("click",e=>{showWind=!showWind;e.target.classList.toggle("on",showWind);});
-$("tgGrid").addEventListener("click",e=>{showGrid=!showGrid;e.target.classList.toggle("on",showGrid);});
+window.addEventListener("keydown",e=>{
+  if(e.code==="Space"){e.preventDefault();setPlaying(!playing);}
+  else if(e.code==="ArrowRight"){setPlaying(false);pos=clamp(pos+0.2,0,KF.length-1);}
+  else if(e.code==="ArrowLeft"){setPlaying(false);pos=clamp(pos-0.2,0,KF.length-1);}
+});
 window.addEventListener("resize",()=>{sizeGraph();});
 
-// 键盘
-window.addEventListener("keydown",e=>{
-  if(e.code==="Space"){e.preventDefault(); setPlaying(!playing);}
-  else if(e.code==="ArrowRight"){setPlaying(false); pos=clamp(pos+0.2,0,KF.length-1);}
-  else if(e.code==="ArrowLeft"){setPlaying(false); pos=clamp(pos-0.2,0,KF.length-1);}
-});
-
-/* ---------- 进入 ---------- */
+/* 进入 */
 buildTicks(); sizeGraph();
 requestAnimationFrame(frame);
-setTimeout(()=>{ const b=$("enter"); if(b) b.style.display="inline-block";
-  const p=document.querySelector("#intro p .load-dots"); if(p) p.textContent="初始涡旋已就绪";
-},1400);
-$("enter").addEventListener("click",()=>{
-  entered=true;
-  const intro=$("intro"); intro.style.opacity="0";
-  setTimeout(()=>intro.style.display="none",800);
-  setPlaying(true);
+setTimeout(()=>{ const b=$("enter"); if(b)b.style.display="inline-block";
+  const p=document.querySelector("#intro p .load-dots"); if(p)p.textContent="三维涡旋已就绪"; },1500);
+$("enter").addEventListener("click",()=>{ entered=true; const intro=$("intro"); intro.style.opacity="0";
+  setTimeout(()=>intro.style.display="none",800); setPlaying(true);
+  setTimeout(()=>{const h=$("hint"); if(h&&!userInteracted)h.style.opacity="1";},900);
+  setTimeout(()=>{const h=$("hint"); if(h)h.style.opacity="0";},6000);
 });
-// 允许点击任意处进入（移动端）
-$("intro").addEventListener("click",e=>{ if(e.target.id==="intro" && $("enter").style.display!=="none"){ $("enter").click(); }});
+$("intro").addEventListener("click",e=>{ if(e.target.id==="intro"&&$("enter").style.display!=="none"){$("enter").click();}});
 </script>
 </body>
 </html>
