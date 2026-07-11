@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>台风·巴威 BAVI 2026 · 数字模拟</title>
+<style>
+  :root{
+    --accent: #34e0c0;
+    --accent-soft: rgba(52,224,192,0.15);
+    --bg0:#04070f;
+    --bg1:#0a1524;
+    --ink:#e9f2ff;
+    --ink-dim:#8ea6c4;
+    --panel: rgba(10,20,36,0.55);
+    --panel-brd: rgba(120,170,220,0.16);
+    --mono:"SFMono-Regular",ui-monospace,"JetBrains Mono","Roboto Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;width:100%;overflow:hidden;background:var(--bg0);color:var(--ink);font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;}
+  #stage{position:fixed;inset:0;}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+
+  /* ---------- HUD ---------- */
+  .hud{position:absolute;inset:0;pointer-events:none;z-index:10;}
+  .hud > *{pointer-events:auto;}
+
+  /* Header */
+  .header{position:absolute;top:0;left:0;right:0;padding:18px 22px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
+    background:linear-gradient(180deg,rgba(3,7,15,0.7),rgba(3,7,15,0));}
+  .title-wrap{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;}
+  .stormtag{font-family:var(--mono);font-size:11px;letter-spacing:2px;color:var(--accent);
+    border:1px solid var(--accent);border-radius:999px;padding:3px 10px;transition:.6s;white-space:nowrap;
+    box-shadow:0 0 18px -6px var(--accent);}
+  h1{font-size:23px;font-weight:800;letter-spacing:1px;line-height:1;}
+  h1 .en{font-family:var(--mono);font-weight:500;color:var(--ink-dim);font-size:14px;letter-spacing:3px;margin-left:8px;}
+  .subtitle{font-size:11.5px;color:var(--ink-dim);margin-top:6px;letter-spacing:.3px;font-family:var(--mono);}
+  .legend-top{text-align:right;font-family:var(--mono);font-size:10.5px;color:var(--ink-dim);line-height:1.7;}
+  .legend-top b{color:var(--ink);font-weight:600;}
+
+  /* Left status stack */
+  .panel{background:var(--panel);border:1px solid var(--panel-brd);border-radius:14px;
+    backdrop-filter:blur(9px) saturate(1.2);-webkit-backdrop-filter:blur(9px) saturate(1.2);}
+  .stack-left{position:absolute;left:20px;top:96px;width:214px;display:flex;flex-direction:column;gap:12px;}
+  .cat-card{padding:14px 15px 15px;position:relative;overflow:hidden;transition:.5s;}
+  .cat-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent);transition:.5s;box-shadow:0 0 20px var(--accent);}
+  .cat-phase{font-family:var(--mono);font-size:10.5px;letter-spacing:2px;color:var(--ink-dim);text-transform:uppercase;}
+  .cat-name{font-size:22px;font-weight:800;margin-top:4px;color:var(--accent);transition:.5s;letter-spacing:1px;}
+  .cat-en{font-family:var(--mono);font-size:10.5px;color:var(--ink-dim);letter-spacing:1.5px;margin-top:2px;}
+
+  .metric{padding:12px 15px;}
+  .metric .k{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--ink-dim);text-transform:uppercase;}
+  .metric .v{font-family:var(--mono);font-weight:700;letter-spacing:.5px;margin-top:3px;line-height:1;}
+  .metric .v .big{font-size:27px;}
+  .metric .v .unit{font-size:12px;color:var(--ink-dim);margin-left:4px;font-weight:500;}
+  .metric .sub{font-size:10.5px;color:var(--ink-dim);margin-top:5px;font-family:var(--mono);}
+
+  /* Right info */
+  .stack-right{position:absolute;right:20px;top:96px;width:210px;display:flex;flex-direction:column;gap:12px;}
+  .kv{padding:13px 15px;display:flex;flex-direction:column;gap:9px;}
+  .kv .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .kv .row .k{font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--ink-dim);text-transform:uppercase;white-space:nowrap;}
+  .kv .row .val{font-family:var(--mono);font-size:12.5px;font-weight:600;text-align:right;letter-spacing:.3px;}
+  .note-card{padding:13px 15px;}
+  .note-card .k{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--accent);text-transform:uppercase;transition:.5s;}
+  .note-card .txt{font-size:12.5px;line-height:1.55;margin-top:7px;color:var(--ink);}
+
+  /* Bottom console */
+  .console{position:absolute;left:50%;transform:translateX(-50%);bottom:16px;width:min(920px,calc(100% - 40px));
+    padding:14px 18px 15px;display:flex;flex-direction:column;gap:11px;}
+  .tl-head{display:flex;align-items:center;justify-content:space-between;gap:14px;}
+  .tl-date{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:1px;color:var(--ink);}
+  .tl-date .yr{color:var(--ink-dim);font-weight:500;}
+  .controls{display:flex;align-items:center;gap:9px;}
+  .btn{pointer-events:auto;font-family:var(--mono);font-size:12px;color:var(--ink);background:rgba(255,255,255,0.05);
+    border:1px solid var(--panel-brd);border-radius:9px;padding:7px 11px;cursor:pointer;transition:.2s;user-select:none;letter-spacing:.5px;}
+  .btn:hover{background:var(--accent-soft);border-color:var(--accent);}
+  .btn.play{min-width:78px;text-align:center;color:#04121a;background:var(--accent);border-color:var(--accent);font-weight:700;
+    box-shadow:0 0 20px -5px var(--accent);transition:.5s;}
+  .btn.play:hover{filter:brightness(1.12);}
+  .spd{display:flex;gap:2px;background:rgba(255,255,255,0.04);border:1px solid var(--panel-brd);border-radius:9px;overflow:hidden;}
+  .spd .s{padding:7px 9px;font-family:var(--mono);font-size:11px;cursor:pointer;color:var(--ink-dim);transition:.15s;}
+  .spd .s.on{background:var(--accent);color:#04121a;font-weight:700;}
+
+  /* Timeline track */
+  .track-wrap{position:relative;height:46px;}
+  #graph{position:absolute;inset:0;width:100%;height:100%;}
+  .track{position:absolute;left:0;right:0;bottom:6px;height:4px;background:rgba(255,255,255,0.12);border-radius:3px;cursor:pointer;}
+  .track .fill{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:3px;transition:.5s;box-shadow:0 0 12px var(--accent);}
+  .track .head{position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);
+    box-shadow:0 0 0 3px var(--accent),0 0 14px var(--accent);transition:box-shadow .5s;}
+  .ticks{position:absolute;left:0;right:0;bottom:14px;height:20px;}
+  .tick{position:absolute;transform:translateX(-50%);font-family:var(--mono);font-size:9px;color:var(--ink-dim);text-align:center;white-space:nowrap;}
+  .tick .dot{width:5px;height:5px;border-radius:50%;background:var(--ink-dim);margin:0 auto 3px;}
+  .tick.peak .dot{background:var(--accent);box-shadow:0 0 8px var(--accent);}
+  .tick.peak{color:var(--ink);}
+
+  .foot{position:absolute;left:20px;bottom:14px;font-family:var(--mono);font-size:9.5px;color:#3f5570;line-height:1.6;max-width:230px;pointer-events:none;}
+  .toggles{position:absolute;right:20px;bottom:112px;display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
+  .tg{font-family:var(--mono);font-size:10.5px;color:var(--ink-dim);background:var(--panel);border:1px solid var(--panel-brd);
+    border-radius:8px;padding:6px 10px;cursor:pointer;transition:.2s;letter-spacing:.5px;backdrop-filter:blur(8px);}
+  .tg.on{color:var(--accent);border-color:var(--accent);box-shadow:0 0 14px -6px var(--accent);}
+
+  /* Intro */
+  #intro{position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;flex-direction:column;
+    background:radial-gradient(circle at 50% 45%,rgba(10,22,40,.4),#04070f 70%);text-align:center;padding:24px;transition:opacity .8s;}
+  #intro h2{font-size:15px;font-weight:600;letter-spacing:3px;color:var(--ink-dim);font-family:var(--mono);}
+  #intro .big{font-size:40px;font-weight:800;letter-spacing:2px;margin:10px 0 4px;}
+  #intro .big .en{color:var(--accent);}
+  #intro p{color:var(--ink-dim);font-size:12.5px;max-width:440px;line-height:1.7;margin-top:14px;font-family:var(--mono);}
+  #enter{margin-top:26px;font-family:var(--mono);letter-spacing:2px;font-size:13px;color:#04121a;background:var(--accent);
+    border:none;border-radius:10px;padding:12px 30px;cursor:pointer;font-weight:700;box-shadow:0 0 30px -6px var(--accent);}
+  .load-dots::after{content:"";animation:dots 1.4s steps(4,end) infinite;}
+  @keyframes dots{0%{content:""}25%{content:"·"}50%{content:"··"}75%{content:"···"}}
+
+  @media (max-width:820px){
+    .stack-left,.stack-right{position:static;width:auto;}
+    .mobile-hide{display:none!important;}
+    .header{flex-direction:column;}
+    h1{font-size:19px;}
+    .console{width:calc(100% - 20px);bottom:10px;padding:11px 12px;}
+    .foot{display:none;}
+    .toggles{bottom:150px;right:10px;}
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="sky"></canvas>
+</div>
+
+<div class="hud">
+  <div class="header">
+    <div class="title-wrap">
+      <div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <h1>台风 · 巴威<span class="en">TYPHOON BAVI</span></h1>
+          <span class="stormtag" id="stormtag">2026 · 第 09 号</span>
+        </div>
+        <div class="subtitle">西北太平洋 · 2026 年暑期最强台风 · 程序化数字模拟（俯视云系视角）</div>
+      </div>
+    </div>
+    <div class="legend-top mobile-hide">
+      <div>命名 · <b>越南</b> 提供，意为河内「巴位山」</div>
+      <div>峰值 · <b>915 hPa</b> / JTWC <b>285 km·h⁻¹</b>（五级）</div>
+      <div>环流直径 · 最大约 <b>1300 km</b> 巨型台风</div>
+    </div>
+  </div>
+
+  <div class="stack-left">
+    <div class="panel cat-card" id="catCard">
+      <div class="cat-phase" id="phase">FORMATION</div>
+      <div class="cat-name" id="catName">热带风暴</div>
+      <div class="cat-en" id="catEn">TROPICAL STORM</div>
+    </div>
+    <div class="panel metric">
+      <div class="k">最大持续风速 · MAX WIND</div>
+      <div class="v"><span class="big" id="wind">18</span><span class="unit">m·s⁻¹</span></div>
+      <div class="sub" id="windKmh">≈ 65 km·h⁻¹ · 8 级</div>
+    </div>
+    <div class="panel metric">
+      <div class="k">中心气压 · PRESSURE</div>
+      <div class="v"><span class="big" id="pres">998</span><span class="unit">hPa</span></div>
+      <div class="sub" id="presSub">中心最低气压</div>
+    </div>
+  </div>
+
+  <div class="stack-right mobile-hide">
+    <div class="panel kv">
+      <div class="row"><span class="k">日期 DATE</span><span class="val" id="rDate">07/02</span></div>
+      <div class="row"><span class="k">定位 POS</span><span class="val" id="rPos">13.8°N 161°E</span></div>
+      <div class="row"><span class="k">移动 MOVE</span><span class="val" id="rMove">西北 10 km/h</span></div>
+      <div class="row"><span class="k">直径 SIZE</span><span class="val" id="rSize">≈ 400 km</span></div>
+    </div>
+    <div class="panel note-card">
+      <div class="k" id="noteK">■ 实时态势 STATUS</div>
+      <div class="txt" id="note">低压环流在关岛东南方生成，对流逐渐组织。</div>
+    </div>
+  </div>
+
+  <div class="toggles mobile-hide">
+    <div class="tg on" id="tgIR">红外增强 IR</div>
+    <div class="tg on" id="tgWind">风场矢量 WIND</div>
+    <div class="tg on" id="tgGrid">经纬网格 GRID</div>
+  </div>
+
+  <div class="panel console">
+    <div class="tl-head">
+      <div class="tl-date">巴威 · <span id="cDate">07 月 02 日 08:00</span> <span class="yr">2026</span></div>
+      <div class="controls">
+        <div class="spd" id="spd">
+          <div class="s" data-s="0.5">0.5×</div>
+          <div class="s on" data-s="1">1×</div>
+          <div class="s" data-s="2">2×</div>
+          <div class="s" data-s="4">4×</div>
+        </div>
+        <button class="btn" id="restart">↺ 重播</button>
+        <button class="btn play" id="play">▶ 播放</button>
+      </div>
+    </div>
+    <div class="track-wrap">
+      <canvas id="graph"></canvas>
+      <div class="ticks" id="ticks"></div>
+      <div class="track" id="track">
+        <div class="fill" id="fill"></div>
+        <div class="head" id="head"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot mobile-hide">
+    数据来源：中国气象局 / JMA / JTWC 公开路径报文<br>
+    可视化为程序化艺术化重建，非业务预报产品。
+  </div>
+</div>
+
+<div id="intro">
+  <h2>DIGITAL TYPHOON SIMULATION</h2>
+  <div class="big">台风 <span class="en">巴威</span> · BAVI</div>
+  <p>一次对 2026 年第 9 号超强台风的程序化重建。<br>
+     拖动或播放时间轴，云系的螺旋、台风眼与风场将随其真实强度演变而实时改变。<br>
+     <span class="load-dots">正在生成初始涡旋</span></p>
+  <button id="enter" style="display:none">进入模拟 ▶</button>
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+   台风·巴威 BAVI 2026 — 程序化数字模拟
+   Canvas 2D procedural typhoon. No external libraries.
+   ===================================================================== */
+
+/* ---------- 真实数据关键帧 (CMA/JMA/JTWC 公开报文，位置为近似) ---------- */
+const KF = [
+  {d:"07/02", t:"08:00", wind:18, pres:998, lat:13.8, lon:161.5, move:"西北 10 km/h",   dia:400,  phase:"生成 FORMATION",   note:"低压环流在关岛东南方生成，对流逐渐组织。"},
+  {d:"07/03", t:"08:00", wind:35, pres:970, lat:14.2, lon:156.0, move:"西北偏西 20 km/h", dia:650,  phase:"加强 TYPHOON",      note:"快速组织，升级为台风级，中心密闭云区形成。"},
+  {d:"07/04", t:"05:00", wind:60, pres:920, lat:14.6, lon:150.5, move:"西偏北 22 km/h",   dia:850,  phase:"爆发增强 RAPID",    note:"爆发性增强，一跃成为超强台风级，针眼初现。"},
+  {d:"07/05", t:"05:00", wind:57, pres:925, lat:14.5, lon:147.5, move:"西北偏西 18 km/h", dia:900,  phase:"眼墙置换 ERC",      note:"眼墙置换周期，风眼扩大，强度小幅波动。"},
+  {d:"07/06", t:"05:00", wind:62, pres:915, lat:14.2, lon:145.2, move:"西北 15 km/h",     dia:800,  phase:"巅峰 PEAK",         note:"巅峰强度登陆罗塔岛。JTWC 评定 285 km/h、901 hPa，五级。"},
+  {d:"07/07", t:"08:00", wind:58, pres:920, lat:15.5, lon:141.0, move:"西北偏西 18 km/h", dia:1000, phase:"西行 MATURE",       note:"掠过马里亚纳群岛，维持超强台风级向西偏北移动。"},
+  {d:"07/08", t:"08:00", wind:55, pres:930, lat:18.0, lon:136.0, move:"西北 20 km/h",     dia:1150, phase:"转向 RECURVE",      note:"强度略减，庞大环流开始向西北方向北抬。"},
+  {d:"07/09", t:"08:00", wind:52, pres:940, lat:20.5, lon:131.0, move:"西北 18 km/h",     dia:1300, phase:"逼近 APPROACH",     note:"位于台湾以东约 1210 km，环流直径约 1300 km 的巨型台风。"},
+  {d:"07/10", t:"08:00", wind:50, pres:945, lat:22.5, lon:126.5, move:"西北 18 km/h",     dia:1300, phase:"趋近台湾 NEARING",  note:"趋向台湾以东洋面，台湾及闽浙风雨影响显著加剧。"},
+  {d:"07/11", t:"08:00", wind:48, pres:950, lat:24.5, lon:122.5, move:"北偏西 20 km/h",   dia:1200, phase:"今日 · 擦过台湾",   note:"擦过台湾北部沿海（14–16 级），趋向福建北部到浙江沿海。"},
+];
+
+/* ---------- 强度分级 (CMA 底层风速 m/s) ---------- */
+const CATS = [
+  {min:51.0, zh:"超强台风", en:"SUPER TYPHOON",       col:"#c04dff"},
+  {min:41.5, zh:"强台风",   en:"SEVERE TYPHOON",      col:"#ff4d5e"},
+  {min:32.7, zh:"台风",     en:"TYPHOON",             col:"#ff8f3d"},
+  {min:24.5, zh:"强热带风暴",en:"SEVERE TROP. STORM",  col:"#ffd23d"},
+  {min:17.2, zh:"热带风暴", en:"TROPICAL STORM",      col:"#34e0c0"},
+  {min:0,    zh:"热带低压", en:"TROPICAL DEPRESSION", col:"#7fb0e0"},
+];
+function catFor(w){ for(const c of CATS){ if(w>=c.min) return c; } return CATS[CATS.length-1]; }
+function beaufort(ms){ // 蒲福风级 (m/s → 级)
+  const t=[[17.2,8],[20.8,9],[24.5,10],[28.5,11],[32.7,12],[37.0,13],[41.5,14],[46.2,15],[51.0,16],[56.1,17],[61.3,18]];
+  let g=7; for(const [v,gr] of t){ if(ms>=v) g=gr; }
+  return g>=18 ? "17 级+" : g+" 级";
+}
+
+/* ---------- 工具 ---------- */
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const smooth=t=>t<=0?0:t>=1?1:t*t*(3-2*t);
+function hexRGBA(hex,a){const n=parseInt(hex.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;}
+
+/* ---------- Canvas 初始化 ---------- */
+const cv=document.getElementById("sky"), ctx=cv.getContext("2d",{alpha:false});
+let W=0,H=0,DPR=1,CX=0,CY=0,BASE=0;
+function resize(){
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=window.innerWidth; H=window.innerHeight;
+  cv.width=W*DPR; cv.height=H*DPR;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  CX=W/2; CY=H/2 - Math.min(H*0.04,40);
+  BASE=Math.min(W,H); // storm scale reference
+}
+window.addEventListener("resize",resize); resize();
+
+/* ---------- 预渲染软粒子精灵 ---------- */
+function makeBlob(size,inner){
+  const c=document.createElement("canvas"); c.width=c.height=size;
+  const g=c.getContext("2d");
+  const rg=g.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
+  rg.addColorStop(0,`rgba(255,255,255,${inner})`);
+  rg.addColorStop(0.4,`rgba(235,244,255,${inner*0.5})`);
+  rg.addColorStop(1,"rgba(210,230,255,0)");
+  g.fillStyle=rg; g.fillRect(0,0,size,size);
+  return c;
+}
+const SPR_CLOUD=makeBlob(64,0.55);
+const SPR_CORE =makeBlob(64,0.95);
+
+/* ---------- 星野背景 ---------- */
+const STARS=[]; for(let i=0;i<160;i++){STARS.push({x:Math.random(),y:Math.random(),r:Math.random()*1.2+0.2,a:Math.random()*0.5+0.15});}
+
+/* ---------- 螺旋臂几何 ---------- */
+// 每帧根据强度参数生成臂上采样点；点用加法混合绘制成云带。
+function drawArms(state){
+  const {intensity, eyeR, stormR, armCount, tight, brightness, accent} = state;
+  ctx.save();
+  ctx.translate(CX,CY);
+  ctx.rotate(-state.angle); // 北半球逆时针
+  ctx.globalCompositeOperation="lighter";
+  const segs=54;
+  for(let a=0;a<armCount;a++){
+    const base=(a/armCount)*Math.PI*2 + state.armJitter[a];
+    for(let i=1;i<=segs;i++){
+      const f=i/segs;
+      const r=eyeR + (stormR-eyeR)*Math.pow(f,0.82);
+      const theta=base + tight*Math.log(r/eyeR + 0.02);
+      // 云带亮度包络：靠近眼墙最亮，向外衰减
+      const env=Math.pow(Math.sin(Math.min(f,1)*Math.PI),0.6);
+      const near=smooth(1-Math.abs(f-0.16)/0.22); // 眼墙附近额外增亮
+      let alpha=(0.05+0.14*env)*brightness*(0.7+0.9*intensity);
+      alpha*=(0.55+0.9*near*intensity+0.5);
+      const x=r*Math.cos(theta), y=r*Math.sin(theta);
+      const size=lerp(BASE*0.03, BASE*0.16, f)*(0.7+0.5*intensity);
+      ctx.globalAlpha=clamp(alpha,0,0.9);
+      ctx.drawImage(SPR_CLOUD, x-size/2, y-size/2, size, size);
+      // 加厚：法向偏移一小簇
+      const nx=-Math.sin(theta), ny=Math.cos(theta);
+      const off=size*0.32;
+      ctx.globalAlpha=clamp(alpha*0.7,0,0.7);
+      ctx.drawImage(SPR_CLOUD, x+nx*off-size*0.35, y+ny*off-size*0.35, size*0.7, size*0.7);
+    }
+  }
+  ctx.restore();
+}
+
+/* ---------- 眼墙 + 台风眼 ---------- */
+function drawEye(state){
+  const {intensity, eyeR, organized, accent, angle}=state;
+  ctx.save();
+  ctx.translate(CX,CY);
+
+  // 眼墙亮环（加法）
+  ctx.globalCompositeOperation="lighter";
+  const ringN=60;
+  const ringStrength=organized;
+  for(let i=0;i<ringN;i++){
+    const th=(i/ringN)*Math.PI*2 - angle*1.3;
+    const rr=eyeR*lerp(1.18,1.05,intensity)*(1+0.05*Math.sin(th*3+angle*2));
+    const x=rr*Math.cos(th), y=rr*Math.sin(th);
+    const s=BASE*0.05*(0.7+0.6*intensity);
+    ctx.globalAlpha=clamp(0.10+0.55*ringStrength*intensity,0,0.8);
+    ctx.drawImage(SPR_CORE, x-s/2,y-s/2,s,s);
+  }
+
+  // 台风眼：挖出深色澄空（正常混合覆盖）
+  ctx.globalCompositeOperation="source-over";
+  const eg=ctx.createRadialGradient(0,0,0,0,0,eyeR*1.12);
+  const clarity=organized; // 组织度越高，眼越干净越深
+  eg.addColorStop(0, `rgba(6,12,22,${0.30+0.62*clarity})`);
+  eg.addColorStop(0.55,`rgba(8,16,28,${0.20+0.55*clarity})`);
+  eg.addColorStop(0.82,`rgba(12,22,38,${0.05+0.15*clarity})`);
+  eg.addColorStop(1, "rgba(12,22,38,0)");
+  ctx.globalAlpha=1;
+  ctx.fillStyle=eg;
+  ctx.beginPath(); ctx.arc(0,0,eyeR*1.12,0,Math.PI*2); ctx.fill();
+
+  // 眼内微光 & 体育场效应高光
+  if(clarity>0.35){
+    ctx.globalCompositeOperation="lighter";
+    ctx.globalAlpha=(clarity-0.35)*0.5;
+    const hl=ctx.createRadialGradient(0,0,eyeR*0.55,0,0,eyeR*1.05);
+    hl.addColorStop(0,"rgba(0,0,0,0)");
+    hl.addColorStop(0.8,hexRGBA(accent,0.10));
+    hl.addColorStop(1,hexRGBA(accent,0.0));
+    ctx.fillStyle=hl; ctx.beginPath(); ctx.arc(0,0,eyeR*1.05,0,Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+/* ---------- 风场矢量 ---------- */
+let showWind=true, showGrid=true, showIR=true;
+function drawWind(state){
+  if(!showWind) return;
+  const {eyeR,stormR,angle,intensity,accent}=state;
+  ctx.save(); ctx.translate(CX,CY);
+  ctx.globalCompositeOperation="lighter";
+  const rings=[1.35,1.75,2.2,2.8];
+  for(const rf of rings){
+    const r=eyeR*rf; if(r>stormR*1.05) continue;
+    const n=Math.floor(rf*10)+8;
+    for(let i=0;i<n;i++){
+      const th=(i/n)*Math.PI*2 - angle*(1.2/rf);
+      const x=r*Math.cos(th), y=r*Math.sin(th);
+      const tx=-Math.sin(th), ty=Math.cos(th); // 切向(逆时针)
+      const len=BASE*0.02*(0.5+intensity)* (1.4/rf);
+      ctx.strokeStyle=hexRGBA(accent,0.10+0.18*intensity);
+      ctx.lineWidth=1.1;
+      ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+tx*len,y+ty*len); ctx.stroke();
+      // 箭头点
+      ctx.fillStyle=hexRGBA(accent,0.25+0.3*intensity);
+      ctx.beginPath(); ctx.arc(x+tx*len,y+ty*len,1.3,0,Math.PI*2); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+/* ---------- 经纬网格（装饰性） ---------- */
+function drawGrid(state){
+  if(!showGrid) return;
+  ctx.save(); ctx.translate(CX,CY);
+  ctx.globalCompositeOperation="source-over";
+  ctx.strokeStyle="rgba(120,160,210,0.06)"; ctx.lineWidth=1;
+  const R=state.stormR*1.35;
+  for(let i=1;i<=4;i++){ ctx.beginPath(); ctx.arc(0,0,R*i/4,0,Math.PI*2); ctx.stroke(); }
+  for(let i=0;i<12;i++){ const th=i/12*Math.PI*2; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(R*Math.cos(th),R*Math.sin(th)); ctx.stroke(); }
+  // 距离刻度标注
+  ctx.fillStyle="rgba(120,160,210,0.28)"; ctx.font="9px monospace"; ctx.textAlign="left";
+  ctx.fillText("R="+Math.round(state.dia/2)+"km", R*0.72, -4);
+  ctx.restore();
+}
+
+/* ---------- 背景 ---------- */
+function drawBG(state){
+  // 深海/太空底
+  const g=ctx.createRadialGradient(CX,CY,0,CX,CY,BASE*0.9);
+  g.addColorStop(0, hexRGBA(state.accent,0.05));
+  g.addColorStop(0.35,"#0a1524");
+  g.addColorStop(1,"#04070f");
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  // 星点
+  ctx.globalCompositeOperation="lighter";
+  for(const s of STARS){ ctx.globalAlpha=s.a*0.6; ctx.fillStyle="#cfe0ff";
+    ctx.fillRect(s.x*W, s.y*H, s.r, s.r); }
+  ctx.globalAlpha=1; ctx.globalCompositeOperation="source-over";
+}
+
+/* ---------- 外层云盾 ---------- */
+function drawShield(state){
+  ctx.save(); ctx.translate(CX,CY);
+  ctx.globalCompositeOperation="lighter";
+  const R=state.stormR*1.12;
+  const g=ctx.createRadialGradient(0,0,state.eyeR*0.5,0,0,R);
+  const b=0.06+0.10*state.intensity;
+  g.addColorStop(0,`rgba(220,235,255,0)`);
+  g.addColorStop(0.5,`rgba(210,228,255,${b})`);
+  g.addColorStop(1,`rgba(190,215,255,0)`);
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,R,0,Math.PI*2); ctx.fill();
+
+  if(showIR){ // 红外增强：眼墙区域的冷云顶伪彩描边
+    ctx.globalCompositeOperation="lighter";
+    const rg=ctx.createRadialGradient(0,0,state.eyeR*0.9,0,0,state.eyeR*2.4);
+    rg.addColorStop(0,hexRGBA(state.accent,0));
+    rg.addColorStop(0.35,hexRGBA(state.accent,0.16*state.intensity));
+    rg.addColorStop(1,hexRGBA(state.accent,0));
+    ctx.fillStyle=rg; ctx.beginPath(); ctx.arc(0,0,state.eyeR*2.4,0,Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+/* =====================================================================
+   模拟状态 & 时间轴
+   ===================================================================== */
+const state={angle:0,intensity:0,eyeR:40,stormR:200,armCount:2,tight:2.2,brightness:1,
+  organized:0,accent:"#34e0c0",dia:400,armJitter:[]};
+for(let i=0;i<8;i++) state.armJitter[i]=Math.random()*0.6-0.3;
+
+let pos=0;            // 关键帧浮点索引 0..KF.length-1
+let playing=false, speed=1, lastT=performance.now();
+const SEG_SECONDS=3.2; // 每段基准秒数
+let entered=false;
+
+/* 依据 pos 插值当前数据 */
+function sample(){
+  const n=KF.length;
+  const p=clamp(pos,0,n-1);
+  const i=Math.floor(p), f=p-i, j=Math.min(i+1,n-1);
+  const A=KF[i], B=KF[j];
+  const wind=lerp(A.wind,B.wind,f);
+  const pres=lerp(A.pres,B.pres,f);
+  const lat=lerp(A.lat,B.lat,f), lon=lerp(A.lon,B.lon,f);
+  const dia=lerp(A.dia,B.dia,f);
+  const cur = f<0.5?A:B;
+  return {wind,pres,lat,lon,dia,cur,A,B,f,i};
+}
+
+/* 依据数据更新可视化参数（含缓动） */
+function updateState(dt){
+  const s=sample();
+  const cat=catFor(s.wind);
+  // 强度归一 (15→72 m/s)
+  const I=clamp((s.wind-16)/(62-16),0,1);
+  // 组织度：随强度提升并对台风级以上更快，用于台风眼清晰度
+  const org=smooth(clamp((s.wind-30)/(58-30),0,1));
+  // 目标值
+  const tgt={
+    intensity:I,
+    organized:org,
+    accent:cat.col,
+    eyeR: BASE*lerp(0.11,0.052,I) * lerp(1.0,0.82,org),
+    stormR: BASE*lerp(0.30,0.46,clamp(s.dia/1300,0,1)),
+    armCount: Math.round(lerp(2,5,I)),
+    tight: lerp(1.8,3.1,I),
+    brightness: lerp(0.75,1.25,I),
+    dia:s.dia,
+  };
+  const k=clamp(1-Math.pow(0.001,clamp(dt,0,0.05)),0,1); // 平滑跟随（夹紧防过冲）
+  state.intensity=lerp(state.intensity,tgt.intensity,k);
+  state.organized=lerp(state.organized,tgt.organized,k);
+  state.eyeR=Math.max(4,lerp(state.eyeR,tgt.eyeR,k));
+  state.stormR=Math.max(state.eyeR*1.5,lerp(state.stormR,tgt.stormR,k));
+  state.tight=lerp(state.tight,tgt.tight,k);
+  state.brightness=lerp(state.brightness,tgt.brightness,k);
+  state.armCount=tgt.armCount;
+  state.accent=tgt.accent;
+  state.dia=tgt.dia;
+  // 旋转：强度越大越快
+  state.angle += dt*(0.12+state.intensity*0.55);
+  return {s,cat,I,org};
+}
+
+/* =====================================================================
+   HUD 更新
+   ===================================================================== */
+const $=id=>document.getElementById(id);
+function pad(n){return n<10?"0"+n:""+n;}
+function updateHUD(info){
+  const {s,cat}=info;
+  const wind=Math.round(s.wind), pres=Math.round(s.pres);
+  $("wind").textContent=wind;
+  $("windKmh").textContent="≈ "+Math.round(wind*3.6)+" km·h⁻¹ · "+beaufort(wind);
+  $("pres").textContent=pres;
+  $("catName").textContent=cat.zh;
+  $("catEn").textContent=cat.en;
+  $("phase").textContent=s.cur.phase;
+  $("note").textContent=s.cur.note;
+  $("rDate").textContent=s.cur.d;
+  $("rPos").textContent=s.lat.toFixed(1)+"°N "+Math.round(s.lon)+"°E";
+  $("rMove").textContent=s.cur.move;
+  $("rSize").textContent="≈ "+Math.round(s.dia)+" km";
+  const dd=s.cur.d.split("/");
+  $("cDate").textContent=dd[0]+" 月 "+dd[1]+" 日 "+s.cur.t;
+  // 主题色
+  document.documentElement.style.setProperty("--accent",cat.col);
+  document.documentElement.style.setProperty("--accent-soft",hexRGBA(cat.col,0.15));
+  $("catName").style.color=cat.col;
+  $("stormtag").style.color=cat.col;
+  $("stormtag").style.borderColor=cat.col;
+  // 时间轴
+  const frac=clamp(pos/(KF.length-1),0,1);
+  $("fill").style.width=(frac*100)+"%";
+  $("head").style.left=(frac*100)+"%";
+}
+
+/* ---------- 底部风-压曲线 ---------- */
+const gcv=$("graph"), gtx=gcv.getContext("2d");
+let gW=0,gH=0;
+function sizeGraph(){ const r=gcv.getBoundingClientRect(); gW=r.width; gH=r.height;
+  gcv.width=gW*DPR; gcv.height=gH*DPR; gtx.setTransform(DPR,0,0,DPR,0,0); }
+function drawGraph(){
+  if(!gW){sizeGraph();}
+  gtx.clearRect(0,0,gW,gH);
+  const n=KF.length, padX=4, padTop=6, padBot=20;
+  const x=i=>padX+(gW-2*padX)*i/(n-1);
+  const winds=KF.map(k=>k.wind), press=KF.map(k=>k.pres);
+  const wMin=15,wMax=64, pMin=910,pMax=1000;
+  const yW=v=>padTop+(gH-padTop-padBot)*(1-(v-wMin)/(wMax-wMin));
+  const yP=v=>padTop+(gH-padTop-padBot)*(1-(pMax-v)/(pMax-pMin)); // 气压：低在下
+  // 压力线（青）
+  gtx.strokeStyle="rgba(80,200,235,0.55)"; gtx.lineWidth=1.4; gtx.beginPath();
+  press.forEach((v,i)=>{ const X=x(i),Y=yP(v); i?gtx.lineTo(X,Y):gtx.moveTo(X,Y); }); gtx.stroke();
+  // 风速线（琥珀）+填充
+  gtx.beginPath(); winds.forEach((v,i)=>{const X=x(i),Y=yW(v); i?gtx.lineTo(X,Y):gtx.moveTo(X,Y);});
+  gtx.lineTo(x(n-1),gH-padBot); gtx.lineTo(x(0),gH-padBot); gtx.closePath();
+  const fg=gtx.createLinearGradient(0,0,0,gH); fg.addColorStop(0,"rgba(255,170,60,0.22)"); fg.addColorStop(1,"rgba(255,170,60,0)");
+  gtx.fillStyle=fg; gtx.fill();
+  gtx.strokeStyle="rgba(255,180,70,0.9)"; gtx.lineWidth=1.6; gtx.beginPath();
+  winds.forEach((v,i)=>{const X=x(i),Y=yW(v); i?gtx.lineTo(X,Y):gtx.moveTo(X,Y);}); gtx.stroke();
+  // 关键帧点
+  winds.forEach((v,i)=>{ gtx.fillStyle="rgba(255,200,110,0.9)"; gtx.beginPath(); gtx.arc(x(i),yW(v),1.8,0,7); gtx.fill(); });
+  // 当前游标
+  const cx=x(clamp(pos,0,n-1));
+  gtx.strokeStyle="rgba(255,255,255,0.35)"; gtx.lineWidth=1; gtx.setLineDash([2,3]);
+  gtx.beginPath(); gtx.moveTo(cx,padTop-2); gtx.lineTo(cx,gH-padBot); gtx.stroke(); gtx.setLineDash([]);
+  const s=sample();
+  gtx.fillStyle="#fff"; gtx.beginPath(); gtx.arc(cx,yW(s.wind),3.2,0,7); gtx.fill();
+  gtx.fillStyle=state.accent; gtx.beginPath(); gtx.arc(cx,yW(s.wind),2,0,7); gtx.fill();
+  // 图例
+  gtx.font="9px monospace"; gtx.textAlign="left";
+  gtx.fillStyle="rgba(255,180,70,0.9)"; gtx.fillText("● 风速 m/s", padX+2, gH-8);
+  gtx.fillStyle="rgba(80,200,235,0.9)"; gtx.fillText("● 气压 hPa", padX+78, gH-8);
+}
+
+/* ---------- 时间轴刻度 ---------- */
+function buildTicks(){
+  const el=$("ticks"); el.innerHTML="";
+  KF.forEach((k,i)=>{
+    const t=document.createElement("div");
+    t.className="tick"+(k.phase.includes("PEAK")?" peak":"");
+    t.style.left=(i/(KF.length-1)*100)+"%";
+    t.innerHTML='<div class="dot"></div>'+k.d.slice(3);
+    el.appendChild(t);
+  });
+}
+
+/* =====================================================================
+   主循环
+   ===================================================================== */
+function frame(now){
+  let dt=(now-lastT)/1000; lastT=now; if(dt>0.05)dt=0.05; if(dt<0)dt=0;
+  if(playing && entered){
+    pos+=dt*speed/SEG_SECONDS;
+    if(pos>=KF.length-1){ pos=KF.length-1; setPlaying(false); }
+  }
+  const info=updateState(dt);
+  // 渲染
+  drawBG(state);
+  drawGrid(state);
+  drawShield(state);
+  drawArms(state);
+  drawWind(state);
+  drawEye(state);
+  updateHUD(info);
+  drawGraph();
+  requestAnimationFrame(frame);
+}
+
+/* =====================================================================
+   交互
+   ===================================================================== */
+function setPlaying(p){ playing=p; const b=$("play");
+  b.textContent=p?"❚❚ 暂停":"▶ 播放";
+  if(p && pos>=KF.length-1) pos=0;
+}
+$("play").addEventListener("click",()=>setPlaying(!playing));
+$("restart").addEventListener("click",()=>{pos=0;setPlaying(true);});
+$("spd").addEventListener("click",e=>{const s=e.target.closest(".s"); if(!s)return;
+  speed=parseFloat(s.dataset.s); [...$("spd").children].forEach(c=>c.classList.toggle("on",c===s));});
+
+// 时间轴拖动
+const track=$("track");
+function seekAt(clientX){ const r=track.getBoundingClientRect();
+  pos=clamp((clientX-r.left)/r.width,0,1)*(KF.length-1); }
+let dragging=false;
+function down(e){dragging=true; setPlaying(false); seekAt((e.touches?e.touches[0]:e).clientX);}
+function moveE(e){if(dragging)seekAt((e.touches?e.touches[0]:e).clientX);}
+function up(){dragging=false;}
+track.addEventListener("mousedown",down); window.addEventListener("mousemove",moveE); window.addEventListener("mouseup",up);
+track.addEventListener("touchstart",e=>{down(e);e.preventDefault();},{passive:false});
+window.addEventListener("touchmove",e=>{if(dragging){moveE(e);e.preventDefault();}},{passive:false});
+window.addEventListener("touchend",up);
+
+// 图层开关
+$("tgIR").addEventListener("click",e=>{showIR=!showIR;e.target.classList.toggle("on",showIR);});
+$("tgWind").addEventListener("click",e=>{showWind=!showWind;e.target.classList.toggle("on",showWind);});
+$("tgGrid").addEventListener("click",e=>{showGrid=!showGrid;e.target.classList.toggle("on",showGrid);});
+window.addEventListener("resize",()=>{sizeGraph();});
+
+// 键盘
+window.addEventListener("keydown",e=>{
+  if(e.code==="Space"){e.preventDefault(); setPlaying(!playing);}
+  else if(e.code==="ArrowRight"){setPlaying(false); pos=clamp(pos+0.2,0,KF.length-1);}
+  else if(e.code==="ArrowLeft"){setPlaying(false); pos=clamp(pos-0.2,0,KF.length-1);}
+});
+
+/* ---------- 进入 ---------- */
+buildTicks(); sizeGraph();
+requestAnimationFrame(frame);
+setTimeout(()=>{ const b=$("enter"); if(b) b.style.display="inline-block";
+  const p=document.querySelector("#intro p .load-dots"); if(p) p.textContent="初始涡旋已就绪";
+},1400);
+$("enter").addEventListener("click",()=>{
+  entered=true;
+  const intro=$("intro"); intro.style.opacity="0";
+  setTimeout(()=>intro.style.display="none",800);
+  setPlaying(true);
+});
+// 允许点击任意处进入（移动端）
+$("intro").addEventListener("click",e=>{ if(e.target.id==="intro" && $("enter").style.display!=="none"){ $("enter").click(); }});
+</script>
+</body>
+</html>
